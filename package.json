@@ -19,6 +19,9 @@
     "ajv": "^5.2.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.136",
+    "@types/uuid": "^3.4.5",
+    "@types/ws": "^6.0.1",
     "@typescript-eslint/eslint-plugin": "^1.13.0",
     "@typescript-eslint/parser": "^1.13.0",
     "chai": "^3.5.0",
@@ -34,6 +37,7 @@
     "start": "node app_sample.js",
     "build": "tsc",
     "lint": "eslint --ignore-path .gitignore .",
+    "lint:fix": "eslint --ignore-path .gitignore . --fix",
     "test": "npm run lint && npm run test:unit",
     "test:unit": "mocha test/test.js",
     "test:integration": "mocha test/integration-test.js",

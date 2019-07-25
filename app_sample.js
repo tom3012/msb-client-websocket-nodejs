@@ -8,7 +8,6 @@
  * See the file "LICENSE" for the full license governing this code.
  */
 
-'use strict';
 
 // Import the required modules:
 const MsbClient = require('./src/msb_client');

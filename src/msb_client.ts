@@ -1,3 +1,6 @@
+/* eslint @typescript-eslint/camelcase: ["error", {allow: [
+  "msb_url", "self_description", "event_id", "event_priority"
+]}] */
 /*
  * This class is a VFK MSB client library for Node.js, to connect to VFK MSB websocket interface.
  *
@@ -8,28 +11,25 @@
  * See the file "LICENSE" for the full license governing this code.
  */
 
-'use strict';
-
-const WebSocket = require('ws');
-const util = require('util');
-const EventEmitter = require('events').EventEmitter;
-const _ = require('lodash');
-const fs = require('fs');
-const Ajv = require('ajv');
-const uuidv4 = require('uuid/v4');
-
+import Ajv from 'ajv';
+import { EventEmitter } from 'events';
+import fs from 'fs';
+import _ from 'lodash';
 // get the path to project root of the project requiring this node module
-const pathToProjectRoot = require('path');
+import pathToProjectRoot from 'path';
+import util from 'util';
+import { v4 as uuidv4 } from 'uuid';
+import WebSocket from 'ws';
 
 // ajv is used to validate specified dataformats of the msb client
 // array of unknown format names will be ignored
-const ajv = new Ajv({unknownFormats: ['float', 'double', 'int32', 'int64']});
+const ajv = new Ajv({ unknownFormats: ['float', 'double', 'int32', 'int64'] });
 // explicitly add the meta-schema (json) to the validator instance
 ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
 
 // ConnectionStateController is used to emit and listen on msb connection states
 // by using the internal Node.js messaging
-let ConnectionStateController = function() {
+let ConnectionStateController = function(): void {
   EventEmitter.call(this);
 };
 util.inherits(ConnectionStateController, EventEmitter);
@@ -54,15 +54,23 @@ let config = {
  * @param {string} paramName - The name of the configuration parameter
  * @returns {*} value of the parameter
  */
-const getParamFromFile = function(paramName) {
+const getParamFromFile = function(paramName: string): any {
   let paramValue, configArray;
-  if (fs.existsSync(pathToProjectRoot.dirname(require.main.filename || '.') + '/application.properties')){
-    configArray = fs.readFileSync(pathToProjectRoot.dirname(require.main.filename || '.')
-    + '/application.properties').toString().split(/\r?\n/);
+  if (fs.existsSync(pathToProjectRoot.dirname(require.main.filename || '.') + '/application.properties')) {
+    configArray = fs
+      .readFileSync(pathToProjectRoot.dirname(require.main.filename || '.') + '/application.properties')
+      .toString()
+      .split(/\r?\n/);
   } else if (fs.existsSync(__dirname + '/../application.properties')) {
-    configArray = fs.readFileSync(__dirname + '/../application.properties').toString().split(/\r?\n/);
+    configArray = fs
+      .readFileSync(__dirname + '/../application.properties')
+      .toString()
+      .split(/\r?\n/);
   } else if (fs.existsSync(__dirname + '/application.properties')) {
-    configArray = fs.readFileSync(__dirname + '/application.properties').toString().split(/\r?\n/);
+    configArray = fs
+      .readFileSync(__dirname + '/application.properties')
+      .toString()
+      .split(/\r?\n/);
   }
   // iterate config array to find param value for param name
   for (let i in configArray) {
@@ -77,9 +85,11 @@ const getParamFromFile = function(paramName) {
 };
 
 // if the application.properties file is present if can be used to automatically initialize the client
-if (fs.existsSync(pathToProjectRoot.dirname(require.main.filename || '.') + '/application.properties')
-  || fs.existsSync(__dirname + '/../application.properties')
-  || fs.existsSync(__dirname + '/application.properties')) {
+if (
+  fs.existsSync(pathToProjectRoot.dirname(require.main.filename || '.') + '/application.properties') ||
+  fs.existsSync(__dirname + '/../application.properties') ||
+  fs.existsSync(__dirname + '/application.properties')
+) {
   config.server = {};
   config.identity = {};
   config.settings = {};
@@ -102,7 +112,7 @@ if (fs.existsSync(pathToProjectRoot.dirname(require.main.filename || '.') + '/ap
  * Contains all valid MSB message types
  * @type {string[]}
  */
-const MSBMessageTypes = [
+const MSBMessageTypes: string[] = [
   'IO',
   'NIO',
   'IO_CONNECTED',
@@ -130,8 +140,13 @@ const MSBMessageTypes = [
  * @returns {MsbClient} a msb client object to specify the service and handle MSB connection
  * @constructor
  */
-const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
-
+const MsbClient = (
+  _serviceType: string,
+  _uuid: string,
+  _name: string,
+  _description: string,
+  _token: string,
+): MsbClient => {
   // check if constructor params are presetn to set main confituration
   if (_serviceType && _uuid && _name && _description && _token) {
     config.identity.type = _serviceType;
@@ -147,10 +162,16 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
 
   let my = this;
 
-  if (!config.identity.type || !config.identity.uuid || !config.identity.name
-      || !config.identity.description || !config.identity.token){
-    let err = 'Missing configurations! Please define msb client config (type, uuid, name, description, token) '
-      + 'either by constructor args of MsbClient or adding an application.properties file to project root.';
+  if (
+    !config.identity.type ||
+    !config.identity.uuid ||
+    !config.identity.name ||
+    !config.identity.description ||
+    !config.identity.token
+  ) {
+    let err =
+      'Missing configurations! Please define msb client config (type, uuid, name, description, token) ' +
+      'either by constructor args of MsbClient or adding an application.properties file to project root.';
     printDebug(my, err);
     throw err;
   }
@@ -163,7 +184,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {string} paramName - The name of the configuration parameter
    * @returns {*} value of the parameter
    */
-  this.getParamFromFile = function(paramName) {
+  this.getParamFromFile = function(paramName: string): any {
     return getParamFromFile(paramName);
   };
 
@@ -172,8 +193,17 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Get the configuration object of the client.
    * @returns {{msb_url: string, identity: {type: string, uuid: string, token: string, name: string, description: string}}}
    */
-  this.getConfig = function() {
-  /* eslint-enable max-len */
+  this.getConfig = function(): {
+    msb_url: string;
+    identity: {
+      type: string;
+      uuid: string;
+      token: string;
+      name: string;
+      description: string;
+    };
+  } {
+    /* eslint-enable max-len */
     return config;
   };
 
@@ -182,8 +212,13 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Generate the self description JSON object of the application or smart object.
    * @returns {{uuid: string, name: string, description: string, token: string, @class: string, events: Array, functions: Array, configuration: ({}|*)}}
    */
-  this.getSelfDescription = function() {
-  /* eslint-enable max-len */
+  this.getSelfDescription = function(): {
+    uuid: string;
+    name: string;
+    description: string;
+    token: string;
+  } {
+    /* eslint-enable max-len */
     let self_description = {
       uuid: config.identity.uuid,
       name: config.identity.name,
@@ -210,7 +245,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Properties have to be added by using addProperty function.
    * @param {string} dataFormat - The name of the new self-defined complex data format.
    */
-  this.createComplexDataFormat = function(dataFormat) {
+  this.createComplexDataFormat = function(dataFormat: string): void {
     let cdf = {};
     cdf['type'] = 'object';
     cdf['properties'] = {};
@@ -226,7 +261,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {string} dataType - The datatype of the property. Could also be another complex data format.
    * @param {boolean} isArray - Specifies it the property defines an array of object or just one object
    */
-  this.addProperty = function(dataFormat, property, dataType, isArray) {
+  this.addProperty = function(dataFormat: string, property: string, dataType: string, isArray: boolean): void {
     // check if data type is a simple data format
     if (!my.dataFormats.hasOwnProperty(dataType)) {
       if (isArray) {
@@ -263,8 +298,14 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {integer-array} responseEvents - The array of event IDs to be send as response events
    */
   this.addFunction = function(
-    functionObject, functionName, functionDescription, functionDataFormat, functionPointer, isArray, responseEvents
-  ) {
+    functionObject: string | object,
+    functionName: string,
+    functionDescription: string,
+    functionDataFormat: string,
+    functionPointer: function,
+    isArray: boolean,
+    responseEvents: string[],
+  ): void {
     if (functionObject.functionId) {
       addFunctionObject(my, functionObject);
     } else {
@@ -277,7 +318,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
         functionDataFormat,
         functionPointer,
         isArray,
-        responseEvents
+        responseEvents,
       );
       addFunctionObject(my, createdFunctionObject);
     }
@@ -292,7 +333,14 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {(string|integer)} priority - The priority of the event (LOW,MEDIUM,HIGH) or (0,1,2)
    * @param {boolean} isArray - Specifies if the event handles an object array or just an object of the data
    */
-  this.addEvent = function(eventObject, eventName, eventDescription, eventDataType, priority, isArray) {
+  this.addEvent = function(
+    eventObject: string | object,
+    eventName: string,
+    eventDescription: string,
+    eventDataType: string,
+    priority: string | number,
+    isArray: boolean,
+  ): void {
     if (eventObject.eventId) {
       addEventObject(my, eventObject);
     } else {
@@ -304,7 +352,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
         eventDescription,
         eventDataType,
         priority,
-        isArray
+        isArray,
       );
       addEventObject(my, created_event_object);
     }
@@ -316,7 +364,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {*} eventValue - The event value to be validated
    * @returns {boolean} result of validation
    */
-  this.validateEventValue = function(eventId, eventValue) {
+  this.validateEventValue = function(eventId: string, eventValue: any): boolean {
     return validateEvent(my, eventId, eventValue);
   };
 
@@ -332,7 +380,14 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {date} postDate - the post date of the event (e.g. new Date().toISOString();)
    * @param {string} correlationId - The correlation id of the event used to idetify events in multi-step flows
    */
-  this.publish = function(eventId, value, priority, cached, postDate, correlationId) {
+  this.publish = function(
+    eventId: string,
+    value: any,
+    priority: string | number,
+    cached: boolean,
+    postDate: Date,
+    correlationId: string,
+  ): void {
     publish(my, eventId, value, priority, cached, postDate, correlationId);
   };
 
@@ -344,7 +399,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {string} format - The simple data format of the confituration parameter
    * @throws Will throw an error if the format is boolean and the value cannot be parsed as boolean.
    */
-  this.addConfigParameter = function(key, value, format) {
+  this.addConfigParameter = function(key: string, value: any, format: string): void {
     // create new configuration parameter
     let newConfigParam = {};
     // handle different values for boolean params (either string or boolean value)
@@ -367,7 +422,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
     // get complete data type based on single forrmat string
     let dataType = getDataType(format);
     newConfigParam['type'] = dataType.type.toUpperCase();
-    if (dataType.format){
+    if (dataType.format) {
       newConfigParam['format'] = dataType.format.toUpperCase();
     }
     // add new configuration parameter for key
@@ -379,7 +434,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {string} key - The key (name) of the configuration parameter
    * @returns {*} the value of the configuration parameter or undefined if not found
    */
-  this.getConfigParameter = function(key) {
+  this.getConfigParameter = function(key: string): any {
     if (my.configuration.parameters[key]) {
       return my.configuration.parameters[key]['value'];
     } else {
@@ -393,7 +448,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {*} value - The new value of the configuration parameter
    * @throws Will throw an error if the configuation parameter cannot be changed.
    */
-  this.changeConfigParameter = function(key, value) {
+  this.changeConfigParameter = function(key: string, value: any): void {
     // only change configuration params if connected to MSB, as they are also stored there within the self-description
     if (my.connected && my.registered) {
       if (my.configuration.parameters[key]) {
@@ -403,15 +458,15 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
         // update self-description on MSB
         try {
           if (my.sockJsFraming) {
-            my.socket.send('["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]',
-              function(error) {
-                if (error !== undefined)
-                  console.error('Async error:' + error);
-              });
+            my.socket.send(
+              '["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]',
+              function(error: Error): void {
+                if (error !== undefined) console.error('Async error:' + error);
+              },
+            );
           } else {
-            my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error) {
-              if (error !== undefined)
-                console.error('Async error:' + error);
+            my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error: Error): void {
+              if (error !== undefined) console.error('Async error:' + error);
             });
           }
         } catch (e) {
@@ -440,7 +495,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Enables or disables the debug logging for the msb client.
    * @param {boolean} enabled - Used to either enable (true) or disable (false) debug logging.
    */
-  this.enableDebug = function(enabled) {
+  this.enableDebug = function(enabled: boolean): void {
     my.debug = enabled;
   };
 
@@ -449,7 +504,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * (mainly for development, can be disabled in production to improve performance)
    * @param {boolean} enabled - Used to either enable (true) or disable (false) format validation
    */
-  this.enableDataFormatValidation = function(enabled) {
+  this.enableDataFormatValidation = function(enabled: boolean): void {
     my.dataFormatValidation = enabled;
   };
 
@@ -457,7 +512,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Disables or enables auto reconnect for the client if connection to MSB gets lost.
    * @param {boolean} disabled - Used to either disable (true) or enable (false) auto reconnect
    */
-  this.disableAutoReconnect = function(disabled) {
+  this.disableAutoReconnect = function(disabled: boolean): void {
     my.autoReconnect = !disabled;
   };
 
@@ -465,7 +520,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Set the interval in ms for automatic reconnects if connection to MSB gets lost.
    * @param {integer} interval - The interval value in ms (>=3000) for automatic reconnections
    */
-  this.setReconnectInterval = function(interval) {
+  this.setReconnectInterval = function(interval: number): void {
     if (interval < my.reconnectIntervalMin) {
       my.reconnectInterval = my.reconnectIntervalMin;
       console.warn('Interval set to 3000 ms, cannot be set lower than 3000 ms.');
@@ -480,7 +535,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * @param {boolean} enabled - Used to enable (true) or disable (false) the keep alive functionality
    * @param {integer} interval - Client-side heartbeat interval value in ms
    */
-  this.setKeepAlive = function(enabled, interval) {
+  this.setKeepAlive = function(enabled: boolean, interval: number): void {
     my.keepAlive = enabled;
     my.heartbeat_interval = interval;
   };
@@ -488,7 +543,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
   /**
    * Called each time the callback for client-side heartbeat was received successfully.
    */
-  this.heartbeat = function() {
+  this.heartbeat = function(): void {
     my.socket.isAlive = true;
     printDebug(my, 'CLIENT-SIDE HEARTBEAT');
   };
@@ -497,7 +552,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Disables or enables the sockJs framing.
    * @param {boolean} disabled  - Used to either disable (true) or enable (false) sockJs framing
    */
-  this.disablesockJsFraming = function(disabled) {
+  this.disablesockJsFraming = function(disabled: boolean): void {
     my.sockJsFraming = !disabled;
   };
 
@@ -505,7 +560,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Disables or enables checking for self-signed SSL certificates (disable it e.g. for development)
    * @param {boolean} disabled - Used to either disable (true) or enable (false) ssl checks
    */
-  this.disableHostnameVerification = function(disabled) {
+  this.disableHostnameVerification = function(disabled: boolean): void {
     my.sslopts['rejectUnauthorized'] = !disabled;
   };
 
@@ -513,7 +568,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Disables or enables the event cache, which will save sent events if no active MSB connection is present.
    * @param {boolean} disabled - Used to either disable (true) or enable (false) event cache
    */
-  this.disableEventCache = function(disabled) {
+  this.disableEventCache = function(disabled: boolean): void {
     my.eventCacheEnabled = !disabled;
   };
 
@@ -522,7 +577,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * If the max is reached, oldest entry gets dismissed.
    * @param {integer} size - The site of the event cache (event entries)
    */
-  this.setEventCacheSize = function(size) {
+  this.setEventCacheSize = function(size: number): void {
     my.eventCacheSize = size;
   };
 
@@ -531,22 +586,24 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * The msb_url parameter is optional. If not provided the msb_url will be read from the application.properties
    * @param {string} msb_url - The url of the MSB to connect to (http(s)://host:port or ws(s)://host:port)
    */
-  this.connect = function(msb_url) {
+  this.connect = function(msb_url: string): void {
     // check url and add complete websocket path to url
-    checkUrl(my, msb_url).then(function() {
-      connect(my).catch(function(err) {
+    checkUrl(my, msb_url)
+      .then(function(): void {
+        connect(my).catch(function(err): void {
+          console.error(err);
+          process.exit(1);
+        });
+      })
+      .catch(function(err): void {
         console.error(err);
-        process.exit(1);
       });
-    }).catch(function(err) {
-      console.error(err);
-    });
   };
 
   /**
    * Disconnects the client from an MSB.
    */
-  this.disconnect = function() {
+  this.disconnect = function(): void {
     disconnect(my);
   };
 
@@ -554,14 +611,14 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Check if the client has an active connection to the MSB.
    * @returns {boolean} if the client is connected to MSB
    */
-  this.isConnected = function() {
+  this.isConnected = function(): boolean {
     return my.connected;
   };
 
   /**
    * Registers the client on the MSB.
    */
-  this.register = function() {
+  this.register = function(): void {
     register(my);
   };
 
@@ -569,7 +626,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Check if the client has an active and registered connection to the MSB.
    * @returns {boolean} if the client is registered on MSB
    */
-  this.isRegistered = function() {
+  this.isRegistered = function(): boolean {
     return my.registered;
   };
 
@@ -577,10 +634,9 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
    * Get a connection state listener object to listen to the internal Node.js messaging for msb clientconnection states.
    * @returns {ConnectionStateListener} the sonncetion state listener to listen on connection state changes
    */
-  this.getConnectionStateListener = function() {
+  this.getConnectionStateListener = function(): ConnectionStateListener {
     return my.connectionStateController;
   };
-
 };
 
 /**
@@ -588,7 +644,7 @@ const MsbClient = function(_serviceType, _uuid, _name, _description, _token) {
  * @param {(string|integer)} priority - The priority to be converted (LOW,MEDIUM,HIGH) or (0,1,2)
  * @returns {integer} priority as integer value (0,1,2)
  */
-function convertPriority(priority) {
+function convertPriority(priority: string | number): number {
   if (priority === 'HIGH' || priority === 2) {
     priority = 2;
   } else if (priority === 'MEDIUM' || priority === 1) {
@@ -605,11 +661,12 @@ function convertPriority(priority) {
  * @param {MsbClient} my - The msb client instance
  * @param {*} functionObject - The function object with all required properties
  */
-function addFunctionObject(my, functionObject) {
+function addFunctionObject(my: MsbClient, functionObject: any): void {
   // check if defined response events are in added events
-  let eventIdArray = [];
+  let eventIdArray: string[] = [];
+
   if (functionObject['responseEvents']) {
-    functionObject['responseEvents'].forEach(function(response_event) {
+    functionObject['responseEvents'].forEach(function(response_event): void {
       var foundEvent = false;
       for (let event in my.events) {
         if (my.events.hasOwnProperty(event) && my.events[event].eventId === response_event) {
@@ -620,9 +677,9 @@ function addFunctionObject(my, functionObject) {
         }
       }
       // if event was defined in reponse event but not found in clients events, throw error
-      if (!foundEvent){
+      if (!foundEvent) {
         let err = new Error(
-          'Error creating Function ' + functionObject.functionId + ': Response event ' + response_event + ' not found!'
+          'Error creating Function ' + functionObject.functionId + ': Response event ' + response_event + ' not found!',
         );
         printDebug(my, err);
         throw err;
@@ -660,8 +717,15 @@ function addFunctionObject(my, functionObject) {
  * @returns {object} the function object
  */
 function createFunctionObject(
-  my, _functionId, functionName, functionDescription, functionDataFormat, functionPointer, isArray, _responseEvents
-) {
+  my: MsbClient,
+  _functionId: string,
+  functionName: string,
+  functionDescription: string,
+  functionDataFormat: string,
+  functionPointer: function,
+  isArray: boolean,
+  _responseEvents: string[],
+): object {
   // init function object
   let newFunctionObject = {
     functionId: _functionId,
@@ -687,13 +751,15 @@ function createFunctionObject(
  * @param {*} functionObject - The function object to be validated
  * @returns {boolean} if the data format is valid or not
  */
-function validateFunctionDataFormatSpecification(functionObject) {
+function validateFunctionDataFormatSpecification(functionObject: any): boolean {
   if (functionObject.dataFormat === undefined) {
     return true;
   }
+
   let schema = require('./function_schema.json');
   let validate = ajv.compile(schema);
-  let valid = validate({definitions: functionObject.dataFormat});
+  let valid = validate({ definitions: functionObject.dataFormat });
+
   if (!valid) {
     console.warn('Function schema validation error for: ' + functionObject.functionId);
     console.warn(validate.errors);
@@ -708,7 +774,7 @@ function validateFunctionDataFormatSpecification(functionObject) {
  * @param {MsbClient} my - The msb client instance
  * @param {*} eventObject - The event object with all required properties
  */
-function addEventObject(my, eventObject) {
+function addEventObject(my: MsbClient, eventObject: any): void {
   eventObject.implementation.priority = convertPriority(eventObject.implementation.priority);
 
   // generate id by counting up
@@ -744,7 +810,15 @@ function addEventObject(my, eventObject) {
  * @param {boolean} isArray - Specifies if the event handles an object array or just an object of the data
  * @returns {object} the event object
  */
-function createEventObject(my, _eventId, eventName, eventDescription, eventDataType, priority, isArray) {
+function createEventObject(
+  my: MsbClient,
+  _eventId: string,
+  eventName: string,
+  eventDescription: string,
+  eventDataType: string,
+  priority: string | number,
+  isArray: boolean,
+): object {
   priority = convertPriority(priority);
 
   // init event object
@@ -776,7 +850,7 @@ function createEventObject(my, _eventId, eventName, eventDescription, eventDataT
  * @param {*} eventObject - The event object to be validated
  * @returns {boolean}  if the data format is valid or not
  */
-function validateEventDataFormatSpecification(eventObject) {
+function validateEventDataFormatSpecification(eventObject: any): boolean {
   if (eventObject.dataFormat === undefined) {
     return true;
   }
@@ -784,7 +858,7 @@ function validateEventDataFormatSpecification(eventObject) {
   let schema = require('./event_schema.json');
   // use ajv to compile schema and validate dataformat
   let validate = ajv.compile(schema);
-  let valid = validate({definitions: eventObject.dataFormat});
+  let valid = validate({ definitions: eventObject.dataFormat });
   if (!valid) {
     console.warn('Event schema validation error for: ' + eventObject.eventId);
     console.warn(validate.errors);
@@ -801,7 +875,7 @@ function validateEventDataFormatSpecification(eventObject) {
  * @param {boolean} isArray - Specifies if the data format is an array or not
  * @returns {object} the data format object
  */
-function createDataFormatObject(my, _dataType, isArray) {
+function createDataFormatObject(my: MsbClient, _dataType: string, isArray: boolean): object {
   // init dataformat object
   var newDataFormatObject = {};
   // check if (root) datatype is a self-defined dataformat (see createComplexDataFormat)
@@ -809,18 +883,27 @@ function createDataFormatObject(my, _dataType, isArray) {
     // adds all self-defined dataformats to the new dataformat object (all needed to handle this root datatype)
     addNextDataTypeLevelToDataFormatObject(my, _dataType, newDataFormatObject);
     if (isArray) {
-      newDataFormatObject['dataObject'] = {type: 'array', items: {$ref: '#/definitions/' + _dataType}};
+      newDataFormatObject['dataObject'] = {
+        type: 'array',
+        items: { $ref: '#/definitions/' + _dataType },
+      };
     } else {
-      newDataFormatObject['dataObject'] = {type: 'object', $ref: '#/definitions/' + _dataType};
+      newDataFormatObject['dataObject'] = {
+        type: 'object',
+        $ref: '#/definitions/' + _dataType,
+      };
     }
   } else {
     // if (root) datatype is nNOT a self-defined dataformat, set as a predefined datatype
     // check if datatype is a json string, that need to be parsed as javascript object
-    if (isJsonString(_dataType)){
+    if (isJsonString(_dataType)) {
       newDataFormatObject['dataObject'] = JSON.parse(_dataType);
     } else {
       if (isArray) {
-        newDataFormatObject['dataObject'] = {type: 'array', items: getDataType(_dataType)};
+        newDataFormatObject['dataObject'] = {
+          type: 'array',
+          items: getDataType(_dataType),
+        };
       } else {
         newDataFormatObject['dataObject'] = getDataType(_dataType);
       }
@@ -837,8 +920,8 @@ function createDataFormatObject(my, _dataType, isArray) {
  * @param {(string)} _dataType - The simple data type to be used to create the data fortmat object
  * @param {object} newDataFormatObject - The new data format object that is currently under creation
  */
-function addNextDataTypeLevelToDataFormatObject(my, _dataType, newDataFormatObject) {
-  my.dataFormats[_dataType].df_meta.forEach(function(dt_name) {
+function addNextDataTypeLevelToDataFormatObject(my: MsbClient, _dataType: string, newDataFormatObject: object): void {
+  my.dataFormats[_dataType].df_meta.forEach(function(dt_name): void {
     // if there are sub-datatypes referenced in meta, also check their metas recursively
     if (dt_name !== _dataType && !newDataFormatObject[dt_name]) {
       addNextDataTypeLevelToDataFormatObject(my, dt_name, newDataFormatObject);
@@ -859,7 +942,7 @@ function addNextDataTypeLevelToDataFormatObject(my, _dataType, newDataFormatObje
  * @param {*} value - The value of the event to be validated
  * @returns {boolean} if the event value is valid or not
  */
-function validateEvent(my, eventId, value) {
+function validateEvent(my: MsbClient, eventId: string, value: any): boolean {
   if (my.events[eventId].dataFormat.dataObject.type === 'array') {
     // my.events[eventId].implementation.dataObject
     if (my.events[eventId].dataFormat.dataObject.items.$ref && !validateComplexDataFormat(my, eventId, value, true)) {
@@ -890,7 +973,13 @@ function validateEvent(my, eventId, value) {
  * @param {boolean} isArray - Specifies if the event data format is an array or not
  * @returns {boolean} if the event value is valid or not
  */
-function validateSimpleDataFormat(my, eventId, dataFormat, value, isArray) {
+function validateSimpleDataFormat(
+  my: MsbClient,
+  eventId: string,
+  dataFormat: string,
+  value: any,
+  isArray: boolean,
+): boolean {
   if (dataFormat === undefined) {
     return true;
   }
@@ -909,16 +998,26 @@ function validateSimpleDataFormat(my, eventId, dataFormat, value, isArray) {
  * @param {*} value - The value of the event to be validated
  * @returns {boolean} if the event value is valid or not
  */
-function validateSimpleDataFormatNotArray(my, eventId, dataFormat, value) {
+function validateSimpleDataFormatNotArray(my: MsbClient, eventId: string, dataFormat: string, value: any): boolean {
   // check for dataformats
-  if ((dataFormat === 'integer' && isInt(value))
-  || (dataFormat === 'number' && isFloat(value))
-  || (dataFormat === typeof (value))) {
+  if (
+    (dataFormat === 'integer' && isInt(value)) ||
+    (dataFormat === 'number' && isFloat(value)) ||
+    dataFormat === typeof value
+  ) {
     return true;
   } else {
-    console.error('Error validating event ' + eventId + ': '
-    + 'Value doesn\'t fit the required data format: '
-    + value + ' = ' + typeof (value) + ', expected: ' + dataFormat);
+    console.error(
+      'Error validating event ' +
+        eventId +
+        ': ' +
+        "Value doesn't fit the required data format: " +
+        value +
+        ' = ' +
+        typeof value +
+        ', expected: ' +
+        dataFormat,
+    );
     return false;
   }
 }
@@ -931,11 +1030,11 @@ function validateSimpleDataFormatNotArray(my, eventId, dataFormat, value) {
  * @param {*} value - The value of the event to be validated
  * @returns {boolean} if the event value is valid or not
  */
-function validateSimpleDataFormatArray(my, eventId, dataFormat, value) {
+function validateSimpleDataFormatArray(my: MsbClient, eventId: string, dataFormat: string, value: any): boolean {
   if (Array.isArray(value)) {
     for (let i in value) {
       // use simple validation per value in array
-      if (!validateSimpleDataFormatNotArray(my, eventId, dataFormat, value[i])){
+      if (!validateSimpleDataFormatNotArray(my, eventId, dataFormat, value[i])) {
         return false;
       }
     }
@@ -954,7 +1053,7 @@ function validateSimpleDataFormatArray(my, eventId, dataFormat, value) {
  * @param {boolean} isArray - Specifies if the event data format is an array or not
  * @returns {boolean} if the event value is valid or not
  */
-function validateComplexDataFormat(my, eventId, value, isArray) {
+function validateComplexDataFormat(my: MsbClient, eventId: string, value: any, isArray: boolean): boolean {
   let schema = {};
   if (isArray) {
     schema['items'] = {};
@@ -982,7 +1081,7 @@ function validateComplexDataFormat(my, eventId, value, isArray) {
  * @param {string} format - The format string to be converted into a data type object
  * @returns {object} the created data type object
  */
-function getDataType(format) {
+function getDataType(format: string): object {
   let dataObject = {};
   if (format === 'string') {
     dataObject['type'] = 'string';
@@ -1015,7 +1114,7 @@ function getDataType(format) {
   } else if (format === 'byte') {
     dataObject['type'] = 'string';
     dataObject['format'] = 'byte';
-  } else if (format !== null && format !== undefined){
+  } else if (format !== null && format !== undefined) {
     // so if no valid format and also not null for no payload
     // keep unsupported format, as event validation will throw an error for that
     dataObject['type'] = format;
@@ -1037,13 +1136,22 @@ function getDataType(format) {
  * @param {date} postDate - the post date of the event (e.g. new Date().toISOString();)
  * @param {string} correlationId - The correlation id of the event used to idetify events in multi-step flows
  */
-function publish(my, eventId, value, priority, cached, postDate, correlationId) {
+function publish(
+  my: MsbClient,
+  eventId: string,
+  value: any,
+  priority: string | number,
+  cached: boolean,
+  postDate: Date,
+  correlationId: string,
+): void {
   let _eventId;
   let _value;
   let _priority;
   let _cached;
   let _postDate;
   let _correlationId;
+
   // check if event is defined as event object
   if (eventId.eventId) {
     _eventId = eventId.eventId;
@@ -1061,6 +1169,7 @@ function publish(my, eventId, value, priority, cached, postDate, correlationId) 
     _postDate = postDate;
     _correlationId = correlationId;
   }
+
   let isCached = false;
   // check if the event should be cached in case of connection problems
   if (typeof _cached !== 'undefined' && (_cached === true || _cached === false)) {
@@ -1071,9 +1180,9 @@ function publish(my, eventId, value, priority, cached, postDate, correlationId) 
     // if set, reuse the set event value method
     my.events[_eventId].implementation.dataObject = _value;
   }
-  if (typeof (_priority) !== 'undefined') {
+  if (typeof _priority !== 'undefined') {
     // to be downward compatible, priority param could also be used to define caching
-    if (typeof (_priority) === 'boolean') {
+    if (typeof _priority === 'boolean') {
       isCached = _priority;
     } else {
       _priority = convertPriority(_priority);
@@ -1144,21 +1253,19 @@ function publish(my, eventId, value, priority, cached, postDate, correlationId) 
  * @param {MsbClient} my - The msb client instance
  * @param {object} _eventImpl - The event implementation to be sent
  */
-function publishEventImpl(my, _eventImpl){
+function publishEventImpl(my: MsbClient, _eventImpl: object): void {
   try {
     if (my.sockJsFraming) {
-      my.socket.send('["E ' + JSON.stringify(JSON.stringify(_eventImpl)).slice(1, -1) + '"]', function(error) {
-        if (error === undefined)
-          printDebug(my, 'Sent >> ' + _eventImpl.eventId + ' >> ' + JSON.stringify(_eventImpl));
-        else
-          console.error('Async error:' + error);
+      my.socket.send('["E ' + JSON.stringify(JSON.stringify(_eventImpl)).slice(1, -1) + '"]', function(
+        error: Error,
+      ): void {
+        if (error === undefined) printDebug(my, 'Sent >> ' + _eventImpl.eventId + ' >> ' + JSON.stringify(_eventImpl));
+        else console.error('Async error:' + error);
       });
     } else {
-      my.socket.send('E ' + JSON.stringify(_eventImpl), function(error) {
-        if (error === undefined)
-          printDebug(my, 'Sent >> ' + _eventImpl.eventId + ' >> ' + JSON.stringify(_eventImpl));
-        else
-          console.error('Async error:' + error);
+      my.socket.send('E ' + JSON.stringify(_eventImpl), function(error: Error): void {
+        if (error === undefined) printDebug(my, 'Sent >> ' + _eventImpl.eventId + ' >> ' + JSON.stringify(_eventImpl));
+        else console.error('Async error:' + error);
       });
     }
   } catch (e) {
@@ -1171,8 +1278,8 @@ function publishEventImpl(my, _eventImpl){
  * Check the client's event cache and send its content if a connection is available
  * @param {MsbClient} my - The msb client instance
  */
-function checkEventCache(my) {
-  if ((my.connected && my.registered) && my.eventCache.length > 0) {
+function checkEventCache(my: MsbClient): void {
+  if (my.connected && my.registered && my.eventCache.length > 0) {
     printDebug(my, 'Event cache size: ' + my.eventCache.length);
     for (let i in my.eventCache) {
       if (my.eventCache.hasOwnProperty(i)) {
@@ -1191,8 +1298,8 @@ function checkEventCache(my) {
  * @param {string} msb_url - The url of the MSB (http(s)://host:port or ws(s)://host:port)
  * @returns {Promise} a promise to wait for the url transformation to valid websocket url
  */
-function checkUrl(my, msb_url) {
-  return new Promise(function(resolve, reject) {
+function checkUrl(my: MsbClient, msb_url: string): Promise<any> {
+  return new Promise(function(resolve, reject): void {
     if (msb_url) {
       config.msb_url = msb_url;
     }
@@ -1201,11 +1308,11 @@ function checkUrl(my, msb_url) {
     } else if (config.msb_url.indexOf('https://') > -1) {
       config.msb_url = config.msb_url.replace('https://', 'wss://');
     }
-    if (!(config.msb_url.indexOf('ws://') === 0 | config.msb_url.indexOf('wss://') === 0)) {
+    if (!((config.msb_url.indexOf('ws://') === 0) | (config.msb_url.indexOf('wss://') === 0))) {
       reject('WRONG MSB URL FORMAT: ' + config.msb_url);
     }
     if (my.sockJsFraming) {
-      let server_id = Math.floor(Math.random() * 900) + 100; ;
+      let server_id = Math.floor(Math.random() * 900) + 100;
       let session_id = uuidv4().replace(/-/g, '');
       config.msb_url_with_wspath = config.msb_url + '/websocket/data/' + server_id + '/' + session_id + '/websocket';
     } else {
@@ -1214,7 +1321,6 @@ function checkUrl(my, msb_url) {
     // printDebug(my, 'config.msb_url: ' + config.msb_url);
     // printDebug(my, 'config._msb_url: ' + config.msb_url_with_wspath);
     resolve();
-
   });
 }
 
@@ -1222,26 +1328,26 @@ function checkUrl(my, msb_url) {
  * Connects the client to the MSB WebSocket interface.
  * @see {@link MsbClient#connect}
  * @param {MsbClient} my - The msb client instance
- * @returns {Promis} a promise to wait for the connection process result (incl. adding socket listeners)
+ * @returns {Promise} a promise to wait for the connection process result (incl. adding socket listeners)
  */
-function connect(my) {
-  return new Promise(function(resolve, reject) {
+function connect(my: MsbClient): Promise<any> {
+  return new Promise(function(resolve, reject): void {
     my.userDisconnect = false;
 
     printDebug(my, 'Connecting to MSB @ ' + config.msb_url);
     my.socket = new WebSocket(config.msb_url_with_wspath, my.sslopts);
 
     // config msb connection when socket is open
-    my.socket.on('open', function() {
+    my.socket.on('open', function(): void {
       my.connected = true;
       printDebug(my, 'Socket open');
       // check if keepalive (client-side heartbeat) is enabled
       // if enabled, start heartbeat for ping-pong
       if (my.keepAlive) {
         my.socket.isAlive = true;
-        my.heartbeatIntervallId = setInterval(function ping() {
+        my.heartbeatIntervallId = setInterval(function ping(): void {
           // if ping-pong need to much time, longer than heartbeat, terminate socket connection
-          if (my.socket.isAlive === false){
+          if (my.socket.isAlive === false) {
             console.error('TERMINATE SOCKET: Ping Pong does not transfer heartbeat within heartbeat intervall');
             return my.socket.terminate();
           }
@@ -1253,12 +1359,12 @@ function connect(my) {
     });
 
     // wait for ping-pong with server
-    my.socket.on('pong', function() {
+    my.socket.on('pong', function(): void {
       my.heartbeat();
     });
 
     // on receiving messages from MSB
-    my.socket.on('message', function(data) {
+    my.socket.on('message', function(data): void {
       if (my.sockJsFraming) {
         // print out server-side heartbeat
         if (my.debug && data.startsWith('h')) {
@@ -1282,15 +1388,15 @@ function connect(my) {
             my.reconnecting = false;
             try {
               if (my.sockJsFraming) {
-                my.socket.send('["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]',
-                  function(error) {
-                    if (error !== undefined)
-                      console.error('Async error:' + error);
-                  });
+                my.socket.send(
+                  '["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]',
+                  function(error: Error): void {
+                    if (error !== undefined) console.error('Async error:' + error);
+                  },
+                );
               } else {
-                my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error) {
-                  if (error !== undefined)
-                    console.error('Async error:' + error);
+                my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error: Error): void {
+                  if (error !== undefined) console.error('Async error:' + error);
                 });
               }
             } catch (e) {
@@ -1307,14 +1413,12 @@ function connect(my) {
           // handle ping-pong triggered by websocket interface
           try {
             if (my.sockJsFraming) {
-              my.socket.send('["pong"]', function(error) {
-                if (error !== undefined)
-                  console.error('Async error:' + error);
+              my.socket.send('["pong"]', function(error: Error): void {
+                if (error !== undefined) console.error('Async error:' + error);
               });
             } else {
-              my.socket.send('pong', function(error) {
-                if (error !== undefined)
-                  console.error('Async error:' + error);
+              my.socket.send('pong', function(error: Error): void {
+                if (error !== undefined) console.error('Async error:' + error);
               });
             }
           } catch (e) {
@@ -1330,11 +1434,13 @@ function connect(my) {
           msg = JSON.parse(data.slice(2).replace(/\\"/g, '"'));
           msg['functionParameters'].correlationId = msg.correlationId;
         } catch (err) {
-          console.info('Double-stringified JSON string detected... Removing quote escapes. '
-          + 'Make sure not to map complex objects to strings.');
+          console.info(
+            'Double-stringified JSON string detected... Removing quote escapes. ' +
+              'Make sure not to map complex objects to strings.',
+          );
           msg = data.slice(2).replace(/\\\\\\"/g, '"');
           msg = msg.replace(/\\"/g, '"');
-          msg = msg.replace(/\":\"{\"/g, '\":{\"');
+          msg = msg.replace(/\":\"{\"/g, '":{"');
           msg = JSON.parse(msg.replace(/}\"}}/g, '}}}'));
           msg['functionParameters'].correlationId = msg.correlationId;
         }
@@ -1351,7 +1457,7 @@ function connect(my) {
 
     // a configuration parameter value was changed on MSB
     // the change need to be handled in client (update value)
-    function handleIncomingConfigurationParameters(my, data, reReg) {
+    function handleIncomingConfigurationParameters(my, data, reReg): void {
       let incoming_config = JSON.parse(data.slice(2).replace(/\\"/g, '"'));
       if (incoming_config['uuid'] === config.identity.uuid) {
         for (let key in incoming_config['params']) {
@@ -1361,25 +1467,22 @@ function connect(my) {
         }
       }
       reReg(my);
-    };
+    }
 
     // resend registration to MSB (self desctiption)
-    function reReg() {
+    function reReg(): void {
       try {
         if (my.sockJsFraming) {
-          my.socket.send('["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]',
-            function(error) {
-              if (error === undefined)
-                return;
-              else
-                console.error('Async error:' + error);
-            });
+          my.socket.send('["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]', function(
+            error: Error,
+          ): void {
+            if (error === undefined) return;
+            else console.error('Async error:' + error);
+          });
         } else {
-          my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error) {
-            if (error === undefined)
-              return;
-            else
-              console.error('Async error:' + error);
+          my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error: Error): void {
+            if (error === undefined) return;
+            else console.error('Async error:' + error);
           });
         }
       } catch (e) {
@@ -1387,10 +1490,10 @@ function connect(my) {
         my.socket.close(1, e);
       }
       my.connectionStateController.emit('connectionState', 'NEW_PARAMETERS');
-    };
+    }
 
     // handle closed MSB connection errors
-    my.socket.on('close', function(err) {
+    my.socket.on('close', function(err: Error): void {
       my.connected = false;
       my.registered = false;
       console.warn('CLOSE', err);
@@ -1404,7 +1507,7 @@ function connect(my) {
     });
 
     // on socket errors
-    my.socket.on('error', function(err) {
+    my.socket.on('error', function(err: Error): void {
       console.warn('ERROR', err);
     });
 
@@ -1418,11 +1521,11 @@ function connect(my) {
  * @see {@link MsbClient#disconnect}
  * @param {MsbClient} my - The msb client instance
  */
-function disconnect(my) {
+function disconnect(my: MsbClient): void {
   console.info('Disconnecting.');
   my.userDisconnect = true;
   // if client-side heartbeat is active, cancel the heartbeat intervall
-  if (my.keepAlive && my.heartbeatIntervallId !== undefined){
+  if (my.keepAlive && my.heartbeatIntervallId !== undefined) {
     clearInterval(my.heartbeatIntervallId);
   }
   my.socket.close();
@@ -1433,26 +1536,23 @@ function disconnect(my) {
  * @see {@link MsbClient#register}
  * @param {MsbClient} my - The msb client instance
  */
-function register(my) {
+function register(my: MsbClient): void {
   // set intervall to continuosly try to register if connected
-  let regCheck = setInterval(function() {
+  let regCheck = setInterval(function(): void {
     if (my.connected & !my.registered) {
       clearInterval(regCheck);
       try {
         if (my.sockJsFraming) {
-          my.socket.send('["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]',
-            function(error) {
-              if (error === undefined)
-                return;
-              else
-                console.error('Async error:' + error);
-            });
+          my.socket.send('["R ' + JSON.stringify(JSON.stringify(my.getSelfDescription())).slice(1, -1) + '"]', function(
+            error: Error,
+          ): void {
+            if (error === undefined) return;
+            else console.error('Async error:' + error);
+          });
         } else {
-          my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error) {
-            if (error === undefined)
-              return;
-            else
-              console.error('Async error:' + error);
+          my.socket.send('R ' + JSON.stringify(my.getSelfDescription()), function(error: Error): void {
+            if (error === undefined) return;
+            else console.error('Async error:' + error);
           });
         }
       } catch (e) {
@@ -1469,7 +1569,7 @@ function register(my) {
  * @param {number} n - The number to check
  * @returns {boolean} true if the number is an integer
  */
-function isInt(n) {
+function isInt(n: number): boolean {
   return Number(n) === n && n % 1 === 0;
 }
 
@@ -1478,7 +1578,7 @@ function isInt(n) {
  * @param {number} n - The number to check
  * @returns {boolean} true if the number is a float
  */
-function isFloat(n) {
+function isFloat(n: number): boolean {
   return Number(n) === n && n % 1 !== 0;
 }
 
@@ -1486,7 +1586,7 @@ function isFloat(n) {
  * Check if a string is a json string (parseable)
  * @param {string} str
  */
-function isJsonString(str) {
+function isJsonString(str: string): boolean {
   try {
     JSON.parse(str);
   } catch (e) {
@@ -1500,7 +1600,7 @@ function isJsonString(str) {
  * @param {MsbClient} my - The msb client instance
  * @param {string} msg - The message to be printed
  */
-function printDebug(my, msg) {
+function printDebug(my: MsbClient, msg: string): void {
   if (my.debug) {
     let date = '[' + new Date().toISOString() + ']';
     console.info(date, msg);
@@ -1511,8 +1611,7 @@ function printDebug(my, msg) {
  * Will initialize all default msb client parameters
  * @param {MsbClient} my - The msb client instance
  */
-function initSettings(my) {
-
+function initSettings(my: MsbClient): void {
   // debugging
   my.debug = false;
   my.dataFormatValidation = true;
@@ -1549,12 +1648,12 @@ function initSettings(my) {
   my.configuration['parameters'] = my.parameters;
 
   // socket
-  my.sslopts = {rejectUnauthorized: true};
+  my.sslopts = { rejectUnauthorized: true };
   my.socket = null;
 
   // the emitter-based object listens for incoming connection state messages from the MSB
   my.connectionStateController = new ConnectionStateController();
-  my.connectionStateController.on('connectionState', function(msg) {
+  my.connectionStateController.on('connectionState', function(msg: string): void {
     console.info('[' + new Date().toISOString() + ']', msg);
   });
 }

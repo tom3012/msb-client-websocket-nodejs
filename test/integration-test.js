@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-'use strict';
+
 
 var expect = require('chai').expect;
 const MsbClient = require('../src/msb_client');
